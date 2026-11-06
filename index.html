@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Secure Login</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.4s ease-out forwards',
+            'slide-up': 'slideUp 0.4s ease-out forwards',
+            'pulse-subtle': 'pulseSubtle 2s infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(15px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            pulseSubtle: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.6' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom focus state accents */
+    .input-focus-ring:focus-within {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+    
+    /* Chrome, Safari, Edge, Opera remove number input arrows */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 selection:bg-brand-500 selection:text-white relative overflow-hidden font-sans">
+
+  <!-- Background Decorative Glowing Orbs -->
+  <div class="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Main Card Container -->
+  <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 relative z-10 overflow-hidden">
+    
+    <!-- Top Header & Brand Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white shadow-lg shadow-brand-500/25 mb-4">
+        <i class="fa-solid fa-shield-halved text-2xl"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-white tracking-tight">Secure Portal</h2>
+      <p class="text-xs text-slate-400 mt-1">Multi-factor Authentication Verification</p>
+    </div>
+
+    <!-- Step Progress Indicator -->
+    <div class="flex items-center justify-between mb-8 px-4">
+      <!-- Step 1 Indicator -->
+      <div class="flex flex-col items-center">
+        <div id="step-1-dot" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-brand-600 text-white ring-4 ring-brand-500/20 transition-all duration-300">
+          1
+        </div>
+        <span class="text-[10px] mt-1 text-slate-300 font-medium">Email</span>
+      </div>
+      
+      <div id="line-1" class="h-0.5 flex-1 mx-2 bg-slate-800 transition-colors duration-300"></div>
+
+      <!-- Step 2 Indicator -->
+      <div class="flex flex-col items-center">
+        <div id="step-2-dot" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-800 text-slate-400 transition-all duration-300">
+          2
+        </div>
+        <span class="text-[10px] mt-1 text-slate-400 font-medium">Password</span>
+      </div>
+
+      <div id="line-2" class="h-0.5 flex-1 mx-2 bg-slate-800 transition-colors duration-300"></div>
+
+      <!-- Step 3 Indicator -->
+      <div class="flex flex-col items-center">
+        <div id="step-3-dot" class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-800 text-slate-400 transition-all duration-300">
+          3
+        </div>
+        <span class="text-[10px] mt-1 text-slate-400 font-medium">2FA</span>
+      </div>
+    </div>
+
+    <!-- Toast Notification Box -->
+    <div id="toast-message" class="hidden mb-6 p-3.5 rounded-xl text-xs font-medium flex items-center gap-3 transition-all">
+      <i id="toast-icon" class="fa-solid text-sm"></i>
+      <span id="toast-text" class="flex-1"></span>
+    </div>
+
+    <!-- AUTHENTICATION FORM -->
+    <form id="authForm" onsubmit="handleFormSubmit(event)" novalidate>
+      
+      <!-- STEP 1: EMAIL ADDRESS -->
+      <div id="step-1" class="space-y-4 animate-fade-in">
+        <div>
+          <label for="email" class="block text-xs font-medium text-slate-300 mb-1.5">Email Address</label>
+          <div class="relative input-focus-ring rounded-xl transition-all">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i class="fa-regular fa-envelope"></i>
+            </div>
+            <input 
+              type="email" 
+              id="email" 
+              name="email"
+              placeholder="name@company.com" 
+              class="w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+              autocomplete="email"
+              required
+            >
+          </div>
+          <p id="email-error" class="hidden text-rose-400 text-[11px] mt-1.5 flex items-center gap-1">
+            <i class="fa-solid fa-circle-exclamation"></i> Please enter a valid email address.
+          </p>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="nextStep(1)" 
+          class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-brand-600/25 transition-all duration-200 flex items-center justify-center gap-2 group mt-6"
+        >
+          <span>Continue</span>
+          <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
+        </button>
+
+        <div class="text-center pt-2">
+          <a href="#" onclick="showNotification('Demo mode: Standard authentication supported.', 'info')" class="text-xs text-slate-400 hover:text-slate-200 transition-colors">Need help signing in?</a>
+        </div>
+      </div>
+
+      <!-- STEP 2: PASSWORD -->
+      <div id="step-2" class="hidden space-y-4 animate-fade-in">
+        <!-- Displayed Email summary -->
+        <div class="flex items-center justify-between p-3 bg-slate-950/40 border border-slate-800/80 rounded-xl mb-4">
+          <div class="flex items-center gap-2.5 truncate">
+            <div class="w-7 h-7 rounded-full bg-brand-500/10 text-brand-500 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <span id="display-email" class="text-xs text-slate-300 font-medium truncate"></span>
+          </div>
+          <button type="button" onclick="goToStep(1)" class="text-xs text-brand-500 hover:text-brand-400 font-medium transition-colors shrink-0">Change</button>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="password" class="block text-xs font-medium text-slate-300">Password</label>
+            <a href="#" onclick="showNotification('Password reset link sent to email.', 'info')" class="text-[11px] text-brand-500 hover:text-brand-400 transition-colors">Forgot?</a>
+          </div>
+          <div class="relative input-focus-ring rounded-xl transition-all">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <i class="fa-solid fa-lock text-xs"></i>
+            </div>
+            <input 
+              type="password" 
+              id="password" 
+              name="password"
+              placeholder="••••••••••••" 
+              class="w-full pl-10 pr-10 py-3 bg-slate-950/60 border border-slate-800 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+              autocomplete="current-password"
+              required
+            >
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility()" 
+              class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+              tabindex="-1"
+            >
+              <i id="toggle-password-icon" class="fa-regular fa-eye text-xs"></i>
+            </button>
+          </div>
+          <p id="password-error" class="hidden text-rose-400 text-[11px] mt-1.5 flex items-center gap-1">
+            <i class="fa-solid fa-circle-exclamation"></i> Password must be at least 6 characters.
+          </p>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button 
+            type="button" 
+            onclick="goToStep(1)" 
+            class="w-1/3 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm rounded-xl transition-colors"
+          >
+            Back
+          </button>
+          <button 
+            type="button" 
+            onclick="nextStep(2)" 
+            class="w-2/3 py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-brand-600/25 transition-all duration-200 flex items-center justify-center gap-2 group"
+          >
+            <span>Verify Identity</span>
+            <i class="fa-solid fa-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: 2-FACTOR AUTHENTICATION (2FA) -->
+      <div id="step-3" class="hidden space-y-4 animate-fade-in">
+        <div class="text-center mb-2">
+          <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 mb-2">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <h3 class="text-sm font-semibold text-white">Two-Factor Authentication</h3>
+          <p class="text-xs text-slate-400 mt-1">
+            Enter the 6-digit code sent to your authenticator app or phone.
+          </p>
+        </div>
+
+        <!-- 6 Pin Input Box -->
+        <div class="py-2">
+          <div class="flex justify-between gap-2" id="otp-container">
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+            <input type="number" maxlength="1" pattern="[0-9]*" class="otp-input w-12 h-14 text-center bg-slate-950/60 border border-slate-800 rounded-xl text-xl font-bold text-white focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30 transition-all" />
+          </div>
+          <p id="otp-error" class="hidden text-rose-400 text-[11px] mt-2 text-center flex items-center justify-center gap-1">
+            <i class="fa-solid fa-circle-exclamation"></i> Please enter the complete 6-digit code.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <span>Didn't receive code?</span>
+          <button type="button" id="resend-btn" onclick="resendCode()" class="text-brand-500 hover:text-brand-400 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            Resend Code
+          </button>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button 
+            type="button" 
+            onclick="goToStep(2)" 
+            class="w-1/3 py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-sm rounded-xl transition-colors"
+          >
+            Back
+          </button>
+          <button 
+            type="submit" 
+            id="submit-btn"
+            class="w-2/3 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm rounded-xl shadow-lg shadow-emerald-600/25 transition-all duration-200 flex items-center justify-center gap-2 group"
+          >
+            <span id="submit-text">Complete Login</span>
+            <i id="submit-icon" class="fa-solid fa-check text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- SUCCESS OVERLAY (Shown upon valid login) -->
+    <div id="success-screen" class="hidden py-8 text-center space-y-4 animate-fade-in">
+      <div class="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div>
+        <h3 class="text-xl font-bold text-white">Authentication Successful!</h3>
+        <p class="text-xs text-slate-400 mt-1">Redirecting you securely to your dashboard...</p>
+      </div>
+      <div class="pt-4">
+        <button 
+          onclick="resetDemo()" 
+          class="py-2.5 px-6 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs rounded-xl transition-colors border border-slate-700"
+        >
+          Reset Demo
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer Security Badge -->
+    <div class="mt-8 pt-4 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
+      <span class="flex items-center gap-1.5">
+        <i class="fa-solid fa-lock text-[10px]"></i> 256-bit SSL Encryption
+      </span>
+      <span>Demo Mode</span>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    let resendTimer = null;
+    let countdown = 30;
+
+    // Helper functions
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showNotification(msg, type = 'error') {
+      const toast = document.getElementById('toast-message');
+      const icon = document.getElementById('toast-icon');
+      const text = document.getElementById('toast-text');
+
+      toast.className = 'mb-6 p-3.5 rounded-xl text-xs font-medium flex items-center gap-3 transition-all animate-fade-in';
+      
+      if (type === 'error') {
+        toast.classList.add('bg-rose-500/10', 'border', 'border-rose-500/20', 'text-rose-400');
+        icon.className = 'fa-solid fa-triangle-exclamation text-rose-400';
+      } else if (type === 'success') {
+        toast.classList.add('bg-emerald-500/10', 'border', 'border-emerald-500/20', 'text-emerald-400');
+        icon.className = 'fa-solid fa-circle-check text-emerald-400';
+      } else {
+        toast.classList.add('bg-brand-500/10', 'border', 'border-brand-500/20', 'text-brand-400');
+        icon.className = 'fa-solid fa-circle-info text-brand-400';
+      }
+
+      text.innerText = msg;
+      toast.classList.remove('hidden');
+    }
+
+    function hideNotification() {
+      document.getElementById('toast-message').classList.add('hidden');
+    }
+
+    function togglePasswordVisibility() {
+      const passwordInput = document.getElementById('password');
+      const icon = document.getElementById('toggle-password-icon');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.className = 'fa-regular fa-eye-slash text-xs';
+      } else {
+        passwordInput.type = 'password';
+        icon.className = 'fa-regular fa-eye text-xs';
+      }
+    }
+
+    // Step Transition Controls
+    function updateStepUI() {
+      // Hide all steps
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById('step-3').classList.add('hidden');
+      hideNotification();
+
+      // Show current step
+      document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+
+      // Update Dots and Lines
+      const dot1 = document.getElementById('step-1-dot');
+      const dot2 = document.getElementById('step-2-dot');
+      const dot3 = document.getElementById('step-3-dot');
+      const line1 = document.getElementById('line-1');
+      const line2 = document.getElementById('line-2');
+
+      // Step 1 State
+      if (currentStep >= 1) {
+        dot1.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-brand-600 text-white ring-4 ring-brand-500/20 transition-all duration-300';
+      }
+
+      // Step 2 State
+      if (currentStep >= 2) {
+        dot1.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-600 text-white transition-all duration-300';
+        dot1.innerHTML = '<i class="fa-solid fa-check"></i>';
+        
+        line1.className = 'h-0.5 flex-1 mx-2 bg-brand-600 transition-colors duration-300';
+
+        dot2.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-brand-600 text-white ring-4 ring-brand-500/20 transition-all duration-300';
+        dot2.innerText = '2';
+      } else {
+        line1.className = 'h-0.5 flex-1 mx-2 bg-slate-800 transition-colors duration-300';
+        dot2.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-800 text-slate-400 transition-all duration-300';
+        dot2.innerText = '2';
+        dot1.innerText = '1';
+      }
+
+      // Step 3 State
+      if (currentStep === 3) {
+        dot2.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-600 text-white transition-all duration-300';
+        dot2.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+        line2.className = 'h-0.5 flex-1 mx-2 bg-brand-600 transition-colors duration-300';
+
+        dot3.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-brand-600 text-white ring-4 ring-brand-500/20 transition-all duration-300';
+        dot3.innerText = '3';
+        
+        // Focus first OTP field automatically
+        setTimeout(() => {
+          document.querySelectorAll('.otp-input')[0]?.focus();
+        }, 100);
+      } else {
+        line2.className = 'h-0.5 flex-1 mx-2 bg-slate-800 transition-colors duration-300';
+        dot3.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-slate-800 text-slate-400 transition-all duration-300';
+        dot3.innerText = '3';
+      }
+    }
+
+    function goToStep(stepNumber) {
+      currentStep = stepNumber;
+      updateStepUI();
+    }
+
+    function nextStep(fromStep) {
+      if (fromStep === 1) {
+        const email = document.getElementById('email').value.trim();
+        const errorEl = document.getElementById('email-error');
+        
+        if (!email || !isValidEmail(email)) {
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        errorEl.classList.add('hidden');
+        document.getElementById('display-email').innerText = email;
+        goToStep(2);
+      } 
+      else if (fromStep === 2) {
+        const password = document.getElementById('password').value;
+        const errorEl = document.getElementById('password-error');
+
+        if (!password || password.length < 6) {
+          errorEl.classList.remove('hidden');
+          return;
+        }
+        errorEl.classList.add('hidden');
+        goToStep(3);
+      }
+    }
+
+    // OTP Input logic handling
+    const otpInputs = document.querySelectorAll('.otp-input');
+
+    otpInputs.forEach((input, index) => {
+      // Handle single input & auto focus next
+      input.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val.length > 1) {
+          e.target.value = val.slice(0, 1);
+        }
+
+        if (e.target.value && index < otpInputs.length - 1) {
+          otpInputs[index + 1].focus();
+        }
+      });
+
+      // Handle Backspace navigation
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && index > 0) {
+          otpInputs[index - 1].focus();
+        }
+      });
+
+      // Handle Paste event for whole code
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
+        if (/^\d{6}$/.test(pastedData)) {
+          pastedData.split('').forEach((char, i) => {
+            if (otpInputs[i]) otpInputs[i].value = char;
+          });
+          otpInputs[5].focus();
+        }
+      });
+    });
+
+    function resendCode() {
+      const btn = document.getElementById('resend-btn');
+      btn.disabled = true;
+      countdown = 30;
+      
+      showNotification('A new 6-digit verification code has been sent!', 'success');
+
+      btn.innerText = `Resend in ${countdown}s`;
+      resendTimer = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(resendTimer);
+          btn.disabled = false;
+          btn.innerText = 'Resend Code';
+        } else {
+          btn.innerText = `Resend in ${countdown}s`;
+        }
+      }, 1000);
+    }
+
+    // Final form submission simulation
+    function handleFormSubmit(event) {
+      event.preventDefault();
+
+      let otpValue = '';
+      otpInputs.forEach(input => otpValue += input.value);
+      const otpError = document.getElementById('otp-error');
+
+      if (otpValue.length < 6) {
+        otpError.classList.remove('hidden');
+        return;
+      }
+      otpError.classList.add('hidden');
+
+      // Loading State
+      const submitBtn = document.getElementById('submit-btn');
+      const submitText = document.getElementById('submit-text');
+      const submitIcon = document.getElementById('submit-icon');
+
+      submitBtn.disabled = true;
+      submitText.innerText = 'Verifying...';
+      submitIcon.className = 'fa-solid fa-spinner animate-spin text-xs';
+
+      setTimeout(() => {
+        // Hide Form, Show Success UI
+        document.getElementById('authForm').classList.add('hidden');
+        document.getElementById('step-3-dot').className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold bg-emerald-600 text-white transition-all duration-300';
+        document.getElementById('step-3-dot').innerHTML = '<i class="fa-solid fa-check"></i>';
+        
+        hideNotification();
+        document.getElementById('success-screen').classList.remove('hidden');
+      }, 1200);
+    }
+
+    function resetDemo() {
+      document.getElementById('authForm').reset();
+      otpInputs.forEach(i => i.value = '');
+      
+      const submitBtn = document.getElementById('submit-btn');
+      const submitText = document.getElementById('submit-text');
+      const submitIcon = document.getElementById('submit-icon');
+      submitBtn.disabled = false;
+      submitText.innerText = 'Complete Login';
+      submitIcon.className = 'fa-solid fa-check text-xs';
+
+      document.getElementById('success-screen').classList.add('hidden');
+      document.getElementById('authForm').classList.remove('hidden');
+      
+      if (resendTimer) clearInterval(resendTimer);
+      const resendBtn = document.getElementById('resend-btn');
+      resendBtn.disabled = false;
+      resendBtn.innerText = 'Resend Code';
+
+      goToStep(1);
+    }
+  </script>
+</body>
+</html>
